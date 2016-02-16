@@ -1,0 +1,5 @@
+This contains files to do the preprocessing for [Show, Attend and Tell, Neural Image Caption Generation with Visual Attention.](http://arxiv.org/abs/1502.03044).
+
+The preprocessing script is make_coco_chunks.py. Thanks to [asampat3090](https://github.com/asampat3090) for creating the script that I started with and edited. There were a few changes I needed to make, one major one being that I had to break the pickling into chunks as my version of numpy (on Python 2.7) crashes if I try to put the whole thing into one file. This might very well be a python error, see [here](http://stackoverflow.com/questions/28503942/pickling-large-numpy-array). I've also changed coco.py to work with several .pkl files.
+
+This still might have bugs - let me know or submit a pull request and I can try to fix them.

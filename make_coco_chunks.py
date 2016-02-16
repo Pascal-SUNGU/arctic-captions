@@ -1,5 +1,4 @@
 from caffe_cnn import *
-import pandas as pd
 import numpy as np
 import os
 import scipy
@@ -187,7 +186,3 @@ test_feats = processImgList(testImgs,'./data/coco_align.test')
 with open('./data/coco_align.test.pkl', 'wb') as f:
     # cPickle.dump(test_feats, f,protocol=cPickle.HIGHEST_PROTOCOL)
     cPickle.dump(cap_test, f,protocol=cPickle.HIGHEST_PROTOCOL)
-
-
-yoparams = {'api_token':'4deecd88-ae42-8e50-4ce6-14d4c5c59873'}
-yoall = requests.post('http://api.justyo.co/yoall/',data=yoparams)
