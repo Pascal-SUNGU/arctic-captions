@@ -10,8 +10,7 @@ from pycocotools.coco import COCO
 from pycocoevalcap.eval import COCOEvalCap
 import requests
 
-#Create the CNN
-
+#Create the CNN, using the 19 layers CNN
 vgg_deploy_path = 'VGG_ILSVRC_19_layers_deploy.prototxt'
 vgg_model_path  = 'VGG_ILSVRC_19_layers.caffemodel'
 cnn = CNN(deploy=vgg_deploy_path,
@@ -22,12 +21,12 @@ cnn = CNN(deploy=vgg_deploy_path,
 
 
 
-#Get filenames for training/testing
+#Get filenames for training/testing. Put your own filenames here
 coco_image_path = '/usr0/multicomp/datasets/coco/images'
 tpath = '/usr0/multicomp/datasets/coco/images/train2014/'
 vpath = '/usr0/multicomp/datasets/coco/images/val2014/'
 
-#Get train data from the training file
+#Get train data from the training file. Put your own filenames here
 t_annFile = '/usr0/multicomp/datasets/coco/annotations/captions_train2014.json'
 v_annFile = '/usr0/multicomp/datasets/coco/annotations/captions_val2014.json'
 
@@ -60,13 +59,15 @@ trainImgs = []
 valImgs = []
 testImgs = []
 
+
+#Maps image ID to the index that the image is in
+#in our later giant array of features
 train_id2idx = {}
 val_id2idx = {}
 test_id2idx = {}
 trainidx = 0
 validx = 0
 testidx = 0
-
 for img in imgs:
     thetype = whatType[img['file_name']]
     if thetype == "train":
@@ -84,50 +85,31 @@ for img in imgs:
         testidx += 1
 
 
-# for efficiency lets group annotations by image file ID
+#Go through annotations. Itoa is a dictionary
+#taking in an image ID and returning 5 annotations
 itoa = {}
-allAnnots = []
 for a in annots:
-    imgid = a['id']
+    imgid = a['image_id']
     if not imgid in itoa: itoa[imgid] = []
-    itoa[imgid].append(a)
-    allAnnots.append(a['caption'])
+    itoa[imgid].append(a['caption'])
 
-
-#annotations = pd.read_table(annotation_path, sep='\t', header=None, names=['image', 'caption'])
-#annotations['image_num'] = annotations['image'].map(lambda x: x.split('#')[1])
-#annotations['image'] = annotations['image'].map(lambda x: os.path.join(flickr_image_path,x.split('#')[0]))
-#================
-#Vectorize things
-#================
-# vectorizer = CountVectorizer(encoding='unicode',lowercase=False).fit(allAnnots)
-# dictionary = vectorizer.vocabulary_
-# dictionary_series = pd.Series(dictionary.values(), index=dictionary.keys()) + 2
-# dictionary = dictionary_series.to_dict()
-
-
-# # Sort dictionary in descending order
-# #TODO: Sort by frequency
-# from collections import OrderedDict
-# dictionary = OrderedDict(sorted(dictionary.items(), key=lambda x:x[1], reverse=True))
-
-# with open('./data/coco/dictionary.pkl', 'wb') as f:
-#     cPickle.dump(dictionary, f)
-
-####Where I'm at now
-
+#imgList is a list of image files from the JSONs
+#ind_dict maps image IDs to the index that the image will appear in the
+#features matrix
 def makeCaps(imgList,ind_dict):
     newCaps = []
     for timg in imgList:
-        theid = ind_dict[timg['id']]
-        newCaps.append((allAnnots[theid],theid))
+        myid = timg['id']
+        myidx = ind_dict[myid]
+        for annot in itoa[myid]:
+            newCaps.append((annot,myidx))
     return newCaps
 
 cap_train = makeCaps(trainImgs,train_id2idx)
 cap_val = makeCaps(valImgs,val_id2idx)
 cap_test = makeCaps(testImgs,test_id2idx)
-print "done with linking"
-#Gotta do this now
+print "done with linking caps"
+
 
 def getFilename(imgobj):
     fn = imgobj['file_name']
@@ -135,7 +117,7 @@ def getFilename(imgobj):
         return vpath + fn
     return tpath + fn
 
-
+#Processes the CNN features
 def processImgList(theList,basefn):
     batch_size = 100
     numPics = 0
@@ -168,21 +150,16 @@ def processImgList(theList,basefn):
 
 print('train now')
 train_feats = processImgList(trainImgs,'./data/coco_align.train')
-# dumpStuff('./data/coco_align.train.npy',train_feats)
+
 with open('./data/coco_align.train.pkl', 'wb') as f:
-    # cPickle.dump(train_feats, f,protocol=cPickle.HIGHEST_PROTOCOL)
     cPickle.dump(cap_train, f,protocol=cPickle.HIGHEST_PROTOCOL)
 
 print('val now')
 val_feats = processImgList(valImgs,'./data/coco_align.val')
-# dumpStuff('./data/coco_align.val.npy',val_feats)
 with open('./data/coco_align.val.pkl', 'wb') as f:
-    # cPickle.dump(val_feats, f,protocol=cPickle.HIGHEST_PROTOCOL)
     cPickle.dump(cap_val, f,protocol=cPickle.HIGHEST_PROTOCOL)
 
 print('test now')
 test_feats = processImgList(testImgs,'./data/coco_align.test')
-# dumpStuff('./data/coco_align.test.npy',test_feats)
 with open('./data/coco_align.test.pkl', 'wb') as f:
-    # cPickle.dump(test_feats, f,protocol=cPickle.HIGHEST_PROTOCOL)
     cPickle.dump(cap_test, f,protocol=cPickle.HIGHEST_PROTOCOL)
