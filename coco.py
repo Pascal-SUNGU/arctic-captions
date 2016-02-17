@@ -6,10 +6,15 @@ import time
 import json
 import numpy
 import scipy
+import re
+import string
 
 def parseWords(worddict,n_words,sent):
     toks = []
-    for w in sent.split():
+    #Pretty terrible, but it seems to work
+    myRestring = r"[A-Za-z0-9\_]+|[" + string.punctuation +"]+"
+    filteredsent = re.findall(myRestring, sent)
+    for w in filteredsent:
         if w in worddict:
             if worddict[w] < n_words:
                 toks.append(worddict[w])
